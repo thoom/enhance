@@ -1,0 +1,19 @@
+{
+    "name":"thoom/enhance",
+    "description":"PHP 5.3 libraries for enhancing a framework",
+    "require":{
+        "php": ">=5.3",
+        "doctrine/dbal":">=2.2"
+    },
+    "autoload":{
+        "psr-0":{
+            "Thoom":"lib/"
+        }
+    },
+    "authors":[
+        {
+            "name":"Z.d. Peacock",
+            "email":"zdp@thoomtech.com"
+        }
+    ]
+}
