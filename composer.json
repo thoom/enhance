@@ -1,6 +1,7 @@
 {
     "name":"thoom/enhance",
     "description":"PHP 5.3 libraries for enhancing a framework",
+    "type": "library",
     "require":{
         "php": ">=5.3",
         "doctrine/dbal":">=2.2"
