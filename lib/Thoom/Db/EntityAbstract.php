@@ -16,27 +16,46 @@ use ArrayAccess, ArrayIterator, Countable, BadMethodCallException, InvalidArgume
 
 abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Serializable, Traversable
 {
-    protected $manager;
-
-    protected $columns;
-    protected $columnsAsKeys;
-    protected $primaryKey;
-
+    /**
+     * This should only hold data that is considered committed and has a key in the columns array.
+     * Data in this array will be used to filter out unmodified data in the modified array.
+     *
+     * @var array
+     */
     protected $values = array();
+
+    /**
+     * Holds data that is considered modified and has a key in the columns array.
+     * @var array
+     */
     protected $modified = array();
 
+    /**
+     * Anything that is sent in but does not have a key in the columns array.
+     * It will not be used in the
+     *
+     * @var array
+     */
     protected $container = array();
 
-    public function __construct(ManagerAbstract $manager, array $data = array())
+    public function __construct(array $data = array())
     {
-        $this->manager = $manager;
-
         $parsed = $this->parseArrayData($data);
 
-        $this->values = array_merge($this->columnsAsKeys(), $parsed['columns']);
+        $this->values = array_merge($this->preloadValuesArray(), $parsed['columns']);
 
         $this->container = $parsed['container'];
     }
+
+    protected function preloadValuesArray()
+    {
+        $toLoad = array_fill_keys(array_keys($this->columns()), null);
+
+        //If the columns array has defaults defined, we may want to pre-populate this
+
+        return $toLoad;
+    }
+
 
     protected function parseArrayData(array $data = array())
     {
@@ -82,7 +101,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      * @param bool $resetContainer
      * @return EntityAbstract
      */
-    public function resetData($data, $resetContainer = true)
+    public function resetData($data = array(), $resetContainer = false)
     {
         if ($data instanceof self)
             $data = $data->toArray();
@@ -90,49 +109,57 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
         if (!is_array($data))
             throw new InvalidArgumentException("Array or " . get_class($this) . " instance expected");
 
-
         $parsed = $this->parseArrayData($data);
 
-        $this->values = array_merge($this->columnsAsKeys(), $parsed['columns']);
+        $this->values = array_merge($this->preloadValuesArray(), $parsed['columns']);
         $this->modified = array();
         $this->container = $resetContainer ? $parsed['container'] : array_merge($this->container, $parsed['container']);
 
         return $this;
     }
 
+    /**
+     * Empty's the container array that stores arbitrary data
+     *
+     * @return EntityAbstract
+     */
+    public function resetContainer()
+    {
+        $this->container = array();
+
+        return $this;
+    }
+
+    /**
+     * Returns the column data with modified data replacing defaults
+     *
+     * @return array
+     */
     public function toArray()
     {
         return array_merge($this->values, $this->modified);
     }
 
     //Getters
+    /**
+     * Returns the columns array defined in the EntityManager.
+     *
+     * @return array
+     */
     public function columns()
     {
-        if (!$this->columns)
-            $this->columns = $this->manager->columns();
-
-        return $this->columns;
+        return call_user_func(get_class($this) . "Manager" . "::columns");
     }
 
-    public function columnsAsKeys()
-    {
-        if (!$this->columnsAsKeys)
-            $this->columnsAsKeys = $this->manager->columnsAsKeys();
-
-        return $this->columnsAsKeys;
-    }
-
+    /**
+     * Returns a subset of the modified array that only includes
+     * the values that the entity believes have differed from the last entity refresh
+     *
+     * @return array
+     */
     public function modifiedArray()
     {
         return array_diff_assoc($this->modified, $this->values);
-    }
-
-    public function primaryKey()
-    {
-        if (!$this->primaryKey)
-            $this->primaryKey = $this->manager->primaryKey();
-
-        return $this->primaryKey;
     }
 
     //Magic methods
@@ -246,12 +273,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function serialize()
     {
-        return serialize(array(
-                'primaryKey' => $this[$this->primaryKey()],
-                'data' => $this->toArray(),
-                'columns' => $this->columns(),
-                'columnsAsKeys' => $this->columnsAsKeys())
-        );
+        return serialize($this->values);
     }
 
     /**
@@ -265,13 +287,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function unserialize($serialized)
     {
-        $values = unserialize($serialized);
-
-        $this->primaryKey = $values['primaryKey'];
-        $this->columns = $values['columns'];
-        $this->columnsAsKeys = $values['columnsAsKeys'];
-
-        return $this->resetData($values['data']);
+        return $this->resetData(unserialize($serialized));
     }
 
     /**
