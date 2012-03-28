@@ -29,7 +29,6 @@ abstract class ManagerAbstract
 
     protected $primaryKey = 'id';
 
-
     public function __construct(Connection $db)
     {
         $this->db = $db;
@@ -66,6 +65,21 @@ abstract class ManagerAbstract
         return new $this->entity($this, $data);
     }
 
+    /**
+     * Refreshes the current entity with values from the database
+     *
+     * @param EntityAbstract $entity
+     * @return EntityAbstract|bool
+     */
+    public function refresh(EntityAbstract $entity)
+    {
+        $newEntity = $this->read($entity[$this->primaryKey]);
+        if ($newEntity instanceof $this->entity)
+            return $entity->resetData($newEntity);
+
+        return false;
+    }
+
 
     /**
      * Returns an entity object for the primaryKey sent.
@@ -83,14 +97,19 @@ abstract class ManagerAbstract
     }
 
     /**
-     * Puts a new entity instance into the database.
+     * Updates an entity instance.
      *
      * @param EntityAbstract $entity
      * @return EntityAbstract
      */
     public function update(EntityAbstract $entity)
     {
+        $values = $entity->modifiedArray();
 
+        //TODO: Add functionality to update the table...
+        //Only pull in the modified data... not the original
+
+        return $entity->resetData($values);
     }
 
     /**

@@ -16,9 +16,11 @@ use ArrayAccess, ArrayIterator, Countable, BadMethodCallException, InvalidArgume
 
 abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Serializable, Traversable
 {
-    protected $columns;
-    protected $columnsAsKeys = array();
     protected $manager;
+
+    protected $columns;
+    protected $columnsAsKeys;
+    protected $primaryKey;
 
     protected $values = array();
     protected $modified = array();
@@ -28,11 +30,11 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
     public function __construct(ManagerAbstract $manager, array $data = array())
     {
         $this->manager = $manager;
-        $this->columns = $manager->columns();
-        $this->columnsAsKeys = $manager->columnsAsKeys();
 
         $parsed = $this->parseArrayData($data);
-        $this->values = array_merge($this->columnsAsKeys, $parsed['columns']);
+
+        $this->values = array_merge($this->columnsAsKeys(), $parsed['columns']);
+
         $this->container = $parsed['container'];
     }
 
@@ -40,7 +42,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
     {
         $parsed = array('columns' => array(), 'container' => array());
         foreach ($data as $key => $val) {
-            if (in_array($key, $this->columns))
+            if (in_array($key, $this->columns()))
                 $parsed['columms'][$key] = $val;
             else
                 $parsed['container'][$key] = $val;
@@ -50,7 +52,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
     }
 
     /**
-     * If values is either an array or another instance of the entity, then the values are added to the modified array
+     * Values are added to the modified array rather than the data array
      * @param array|EntityAbstract $values
      * @return array
      */
@@ -74,18 +76,28 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      * Resets the entity to its default state:
      * <br>The $values array is re-populated with column data from the $data array
      * <br>The $modified array is emptied
-     * <br>The $container array is re-populated, or if $container is false, merged
+     * <br>The $container array is re-populated, or if $resetContainer is false, merged
      *
-     * @param array $data
-     * @param bool $container
+     * @param array|EntityAbstract $data
+     * @param bool $resetContainer
+     * @return EntityAbstract
      */
-    public function resetData(array $data, $container = true)
+    public function resetData($data, $resetContainer = true)
     {
+        if ($data instanceof self)
+            $data = $data->toArray();
+
+        if (!is_array($data))
+            throw new InvalidArgumentException("Array or " . get_class($this) . " instance expected");
+
+
         $parsed = $this->parseArrayData($data);
 
-        $this->values = array_merge($this->columnsAsKeys, $parsed['columns']);
+        $this->values = array_merge($this->columnsAsKeys(), $parsed['columns']);
         $this->modified = array();
-        $this->container = $container ? $parsed['container'] : array_merge($this->container, $parsed['container']);
+        $this->container = $resetContainer ? $parsed['container'] : array_merge($this->container, $parsed['container']);
+
+        return $this;
     }
 
     public function toArray()
@@ -93,14 +105,37 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
         return array_merge($this->values, $this->modified);
     }
 
-    public function __call($func, $argv)
+    //Getters
+    public function columns()
     {
-        if (!is_callable($func) || substr($func, 0, 6) !== 'array_') {
-            throw new BadMethodCallException(__CLASS__ . '->' . $func);
-        }
-        return call_user_func_array($func, array_merge($this->toArray(), $argv));
+        if (!$this->columns)
+            $this->columns = $this->manager->columns();
+
+        return $this->columns;
     }
 
+    public function columnsAsKeys()
+    {
+        if (!$this->columnsAsKeys)
+            $this->columnsAsKeys = $this->manager->columnsAsKeys();
+
+        return $this->columnsAsKeys;
+    }
+
+    public function modifiedArray()
+    {
+        return array_diff_assoc($this->modified, $this->values);
+    }
+
+    public function primaryKey()
+    {
+        if (!$this->primaryKey)
+            $this->primaryKey = $this->manager->primaryKey();
+
+        return $this->primaryKey;
+    }
+
+    //Magic methods
     public function __get($name)
     {
         return $this->offsetGet($name);
@@ -111,6 +146,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
         $this->offsetSet($name, $value);
     }
 
+    //Interface methods
     /**
      * (PHP 5 &gt;= 5.1.0)<br/>
      * Whether a offset exists
@@ -125,7 +161,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetExists($offset)
     {
-        return in_array($offset, $this->columns) || array_key_exists($offset, $this->container);
+        return in_array($offset, $this->columns()) || array_key_exists($offset, $this->container);
     }
 
     /**
@@ -139,7 +175,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetGet($offset)
     {
-        if (in_array($offset, $this->columns)) {
+        if (in_array($offset, $this->columns())) {
             if (array_key_exists($offset, $this->modified))
                 return $this->modified[$offset];
 
@@ -167,7 +203,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetSet($offset, $value)
     {
-        if (in_array($offset, $this->columns))
+        if (in_array($offset, $this->columns()))
             $this->modified[$offset] = $value;
 
         $this->container[$offset] = $value;
@@ -210,7 +246,12 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function serialize()
     {
-        // TODO: Implement serialize() method.
+        return serialize(array(
+                'primaryKey' => $this[$this->primaryKey()],
+                'data' => $this->toArray(),
+                'columns' => $this->columns(),
+                'columnsAsKeys' => $this->columnsAsKeys())
+        );
     }
 
     /**
@@ -224,7 +265,13 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function unserialize($serialized)
     {
-        // TODO: Implement unserialize() method.
+        $values = unserialize($serialized);
+
+        $this->primaryKey = $values['primaryKey'];
+        $this->columns = $values['columns'];
+        $this->columnsAsKeys = $values['columnsAsKeys'];
+
+        return $this->resetData($values['data']);
     }
 
     /**
@@ -238,6 +285,6 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function count()
     {
-        return count($this->toArray());
+        return count($this->toArray()) + count($this->container);
     }
 }
