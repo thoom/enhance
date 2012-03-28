@@ -1,9 +1,9 @@
 {
     "name":"thoom/enhance",
     "description":"PHP 5.3 libraries for enhancing a framework",
-    "type": "library",
+    "type":"library",
     "require":{
-        "php": ">=5.3",
+        "php":">=5.3",
         "doctrine/dbal":">=2.2"
     },
     "autoload":{

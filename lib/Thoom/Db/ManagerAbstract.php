@@ -4,7 +4,7 @@
  *
  * Base class to extend to entity managers
  *
- * This class will provide some REST-style methods for accessing the tb table
+ * This class will provide some CRUD methods for accessing the tb table
  * The constructor assumes that the table name is {TableName}Manager
  *
  * @author Z.d. Peacock <zdpeacock@thoomtech.com>
@@ -19,11 +19,16 @@ abstract class ManagerAbstract
 {
     protected $db;
 
+    protected $columns = array();
+
+    protected $columnsAsKeys = array();
+
     protected $entity;
 
     protected $table;
 
     protected $primaryKey = 'id';
+
 
     public function __construct(Connection $db)
     {
@@ -32,40 +37,97 @@ abstract class ManagerAbstract
     }
 
     /**
-     * Returns an entity object for the primaryKey sent. If null, an empty entity is returned
+     * Creates a new entity record in the database
      *
-     * @param null $primaryKey
-     * @return mixed
+     * @param EntityAbstract $entity
+     * @return EntityAbstract
      */
-    public function get($primaryKey = null)
+    public function create(EntityAbstract $entity)
     {
-        if (!$primaryKey)
-            return new $this->entity;
-    }
-
-    public function put(EntityAbstract $values)
-    {
+        $values = $entity->toArray();
         $results = $this->db->insert($this->table, $values);
-        if ($results){
-            if ($values[$this->primaryKey])
-                return $values[$this->primaryKey];
+        if ($results) {
+            if (!isset($values[$this->primaryKey]))
+                $values[$this->primaryKey] = $this->db->lastInsertId();
 
-            return $this->db->lastInsertId();
+            return $entity->resetData($values);
         }
     }
 
-    public function post(EntityAbstract $values)
+    /**
+     * A Factory method that returns a fresh instance of the manager's entity
+     * @param array $data
+     * @return mixed
+     */
+    public function fresh($data = array())
+    {
+        return new $this->entity($this, $data);
+    }
+
+
+    /**
+     * Returns an entity object for the primaryKey sent.
+     *
+     * @param string $primaryKey
+     * @return EntityAbstract
+     */
+    public function read($primaryKey)
+    {
+        $data = $this->db->fetchAssoc("SELECT * FROM $this->table WHERE $this->primaryKey = ?", array($primaryKey));
+        if ($data)
+            return $this->fresh($data);
+    }
+
+    /**
+     * Puts a new entity instance into the database.
+     *
+     * @param EntityAbstract $entity
+     * @return EntityAbstract
+     */
+    public function update(EntityAbstract $entity)
     {
 
     }
 
+    /**
+     * Deletes an existing entity
+     *
+     * @param \Thoom\Db\EntityAbstract $entity
+     * @return int Number of rows affected
+     */
+    public function delete(EntityAbstract $entity)
+    {
+        return $this->db->executeUpdate("DELETE FROM $this->table WHERE $this->primaryKey = ?", array($entity[$this->primaryKey]));
+    }
+
+    /**
+     * Convenience method for describing the current table schema
+     * @return array
+     */
     public function describe()
     {
-        return $this->db->query("DESCRIBE $this->table")->fetchAll();
+        return $this->db->fetchAll("DESCRIBE $this->table");
     }
 
+    //Getter Methods
     public function primaryKey()
     {
         return $this->primaryKey;
+    }
+
+    public function columns()
+    {
+        return $this->columns();
+    }
+
+    public function columnsAsKeys()
+    {
+        if (count($this->columnsAsKeys) < 1){
+            foreach ($this->columns as $key) {
+                $this->columnsAsKeys[$key] = null;
+            }
+        }
+
+        return $this->columnsAsKeys;
     }
 }
