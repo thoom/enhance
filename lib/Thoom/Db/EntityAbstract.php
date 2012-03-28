@@ -143,12 +143,14 @@ class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Seria
             if (array_key_exists($offset, $this->modified))
                 return $this->modified[$offset];
 
-            if (array_key_exists($offset, $this->data))
-                return $this->data[$offset];
+            if (array_key_exists($offset, $this->values))
+                return $this->values[$offset];
         }
 
         if (isset($this->container[$offset]))
             return $this->container[$offset];
+
+        return null;
     }
 
     /**

@@ -40,7 +40,7 @@ abstract class ManagerAbstract
      * Creates a new entity record in the database
      *
      * @param EntityAbstract $entity
-     * @return EntityAbstract
+     * @return EntityAbstract|bool
      */
     public function create(EntityAbstract $entity)
     {
@@ -52,6 +52,8 @@ abstract class ManagerAbstract
 
             return $entity->resetData($values);
         }
+
+        return false;
     }
 
     /**
@@ -69,13 +71,15 @@ abstract class ManagerAbstract
      * Returns an entity object for the primaryKey sent.
      *
      * @param string $primaryKey
-     * @return EntityAbstract
+     * @return EntityAbstract|bool
      */
     public function read($primaryKey)
     {
         $data = $this->db->fetchAssoc("SELECT * FROM $this->table WHERE $this->primaryKey = ?", array($primaryKey));
         if ($data)
             return $this->fresh($data);
+
+        return false;
     }
 
     /**
