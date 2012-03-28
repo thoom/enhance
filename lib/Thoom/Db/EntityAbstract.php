@@ -14,7 +14,7 @@ namespace Thoom\Db;
 
 use ArrayAccess, ArrayIterator, Countable, BadMethodCallException, InvalidArgumentException, IteratorAggregate, Serializable, Traversable;
 
-class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Serializable, Traversable
+abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Serializable, Traversable
 {
     protected $columns;
     protected $columnsAsKeys = array();
