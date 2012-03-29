@@ -36,6 +36,70 @@ Each array serves a distinct purpose:
  placed in the container array instead. The purpose of the container is to provide a space for additional data to be
  attached that doesn't pollute the table data.
 
+#### Usage
+
+There are several ways to access the data in an entity. Here are a few options:
+
+  * As an object:
+
+        $entity->foo = 'bar';
+        echo $entity->foo; //prints "bar"
+
+  * As an array:
+
+        $entity['foo'] = 'bar';
+        echo $entity['foo']; //prints "bar"
+
+The entity by default saves data to the modified array if key exists in the values array, otherwise it's saved to the
+container's array. This can be overridden very easily by creating get/set methods named after the keys to be overridden.
+
+For example, if we want to make sure that the key _foo_ is made lowercase before it's saved to the modified array, in your
+entity class add a setFoo method:
+
+    class BazEntity extends Thoom\Db\EntityAbstract
+    {
+        protected function setFoo($value)
+        {
+           $this->modified['foo'] = strtolower($value);
+        }
+    }
+
+Now if we made the same calls as before:
+
+    $entity['foo'] = 'BaR';
+    echo $entity['foo'] // prints "bar" not "BaR"!
+
+Obviously you want to be careful with this functionality, since your input may not match the output!
+
+Using this functionality you could also introduce some faux properties. For instance, say your database stores the user's
+name as firstName and lastName. You don't want to have to concat these values all the time. Instead, create a faux property!
+
+    class UserEntity extends Thoom\Db\EntityAbstract
+    {
+        protected function getFullName()
+        {
+           return $this->values['firstName'] . ' ' . $this->values['lastName'];
+        }
+    }
+
+Now use it like any other property (say this user has the first name: _Bruce_ and last name: _Banner_):
+
+    $user = $userManager->read($primaryKey);
+    echo $user->fullName; //prints "Bruce Banner"
+
+Note that if you tried to set the full name, it would end up storing the value in the container array unless you also created
+a setFullName method:
+
+    protected function setFullName($value)
+    {
+        $names = explode(' ', $value);
+
+        $this->modified['firstName'] = $names[0];
+        $this->modified['lastName'] = $names[1];
+    }
+
+Voila!
+
 ### The manager
 
 The manager is the entity's interface with the database. The manager behaves as a factory, where it creates new entities and injects
@@ -44,7 +108,7 @@ values and types, the primary key's field name, etc.
 
 The manager uses Dependency Injection to receive its connection to the database.
 
-### Usage
+#### Usage
 
 To use with Silex, I recommend using its DI capability, with the database connection stored in $app['db']:
 
