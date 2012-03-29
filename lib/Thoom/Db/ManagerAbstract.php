@@ -9,6 +9,8 @@
  *
  * @author Z.d. Peacock <zdpeacock@thoomtech.com>
  * @copyright (c) 2011 Thoom Technologies LLC
+ *
+ * TODO: Have the table definition values mean something (i.e., date fields will accept DateTime objects, etc)
  */
 
 namespace Thoom\Db;
@@ -19,47 +21,52 @@ abstract class ManagerAbstract
 {
     /**
      * The current db connection
+     *
      * @var \Doctrine\DBAL\Connection
      */
     protected $db;
 
     /**
      * The entity class name that will this class will manage
+     *
      * @var string
      */
     protected $entity;
 
     /**
      * Stores the table definition. Column keys are the database column names.
-     * TODO: Have the table definition values mean something (i.e., date fields will accept DateTime objects, etc)
+     *
+     * Example: <pre>
+     * protected $columns = array(
+     *      'id' => array('type' => 'int')
+     *      'name' => array('type' => 'string')
+     *      'created' => array('type' => 'date')
+     * );
      *
      * @var array
      */
-    static protected $columns = array(
-        /*
-         * 'id' => array('type' => 'int')
-         * 'name' => array('type' => 'string')
-         * 'created' => array('type' => 'date')
-         * 'etc'
-         */
-    );
+    protected $columns = array();
 
     /**
+     * The name of the primary key's field
      *
      * @var string
      */
-    static protected $primaryKey = 'id';
+    protected $primaryKey = 'id';
 
     /**
      * The db table name that this class will manage
+     *
      * @var string
      */
-    static protected $table;
-
+    protected $table;
 
     public function __construct(Connection $db)
     {
         $this->db = $db;
+
+        if (!$this->table)
+            $this->table = substr(strtolower(str_replace('Manager', '', strrchr(get_class($this), '\\'))), 1);
     }
 
     /**
@@ -71,10 +78,10 @@ abstract class ManagerAbstract
     public function create(EntityAbstract $entity)
     {
         $values = $entity->modifiedArray();
-        $results = $this->db->insert(static::table(), $values);
+        $results = $this->db->insert($this->table, $values);
         if ($results) {
-            if (!isset($values[static::primaryKey()]))
-                $values[static::primaryKey()] = $this->db->lastInsertId();
+            if (!isset($values[$this->primaryKey]))
+                $values[$this->primaryKey] = $this->db->lastInsertId();
 
             return $entity->resetData($values);
         }
@@ -84,23 +91,22 @@ abstract class ManagerAbstract
 
     /**
      * A Factory method that returns a fresh instance of the manager's entity
-     * If isModifiedArray is false, the array will be populated to the values array
-     * If isModifiedArray is true, the array will be populated to the modified array and used in subsequent db updates
+     * <br>If isModifiedArray is false, the array will be populated to the values array
+     * <br>If isModifiedArray is true, the array will be populated to the modified array and used in subsequent db updates
      *
      * @param array $data
      * @param bool $isModifiedArray
      * @return EntityAbstract
      */
-    public function fresh($data = array(), $isModifiedArray = true)
+    public function fresh($data = array(), $isModifiedArray = false)
     {
         if ($isModifiedArray) {
             /* @var $entity EntityAbstract */
-            $entity = new $this->entity();
-
+            $entity = new $this->entity($this->columns);
             return $entity->data($data);
         }
 
-        return new $this->entity($data);
+        return new $this->entity($this->columns, $data);
     }
 
     /**
@@ -111,7 +117,7 @@ abstract class ManagerAbstract
      */
     public function refresh(EntityAbstract $entity)
     {
-        $newEntity = $this->read($entity[static::primaryKey()]);
+        $newEntity = $this->read($entity[$this->primaryKey]);
         if ($newEntity instanceof $this->entity)
             return $entity->resetData($newEntity);
 
@@ -126,7 +132,7 @@ abstract class ManagerAbstract
      */
     public function read($primaryKey)
     {
-        $data = $this->db->fetchAssoc("SELECT * FROM " . static::table() . " WHERE " . static::primaryKey() . " = ?", array($primaryKey));
+        $data = $this->db->fetchAssoc("SELECT * FROM $this->table WHERE $this->primaryKey = ?", array($primaryKey));
         if ($data)
             return $this->fresh($data, false);
 
@@ -151,37 +157,44 @@ abstract class ManagerAbstract
 
     /**
      * Deletes an existing entity
-     * Note that this doesn't empty the entity!
+     * <br>Note that this doesn't empty the entity!
      *
      * @param \Thoom\Db\EntityAbstract $entity
      * @return int Number of rows affected
      */
     public function delete(EntityAbstract $entity)
     {
-        return $this->db->executeUpdate("DELETE FROM " . static::table() . " WHERE " . static::primaryKey() . " = ?", array($entity[static::primaryKey()]));
+        return $this->db->executeUpdate("DELETE FROM $this->table WHERE $this->primaryKey = ?", array($entity[$this->primaryKey]));
     }
 
     /**
      * Convenience method for describing the current table schema
+     *
      * @return array
      */
     public function describe()
     {
-        return $this->db->fetchAll("DESCRIBE " . static::table());
+        return $this->db->fetchAll("DESCRIBE " . $this->table);
     }
 
-    static public function columns()
+    /**
+     * Get the manager's columns array definition
+     *
+     * @return array
+     */
+    public function columns()
     {
-        return static::$columns;
+        return $this->columns;
     }
 
-    static public function primaryKey()
+    /**
+     * Get the primary key value for the entity passed
+     *
+     * @param EntityAbstract $entity
+     * @return string
+     */
+    public function primaryKey(EntityAbstract $entity)
     {
-        return static::$primaryKey;
-    }
-
-    static public function table()
-    {
-        return static::$table;
+        return $entity[$this->primaryKey];
     }
 }
