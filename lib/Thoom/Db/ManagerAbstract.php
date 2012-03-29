@@ -78,6 +78,9 @@ abstract class ManagerAbstract
     public function create(EntityAbstract $entity)
     {
         $values = $entity->modifiedArray();
+
+        //TODO: Introspect the values array and add default values if any keys are missing from the values array.
+        //TODO: If a DateTime object is passed in the values array, output to SQL format (Only handle this if DBAL doesn't)
         $results = $this->db->insert($this->table, $values);
         if ($results) {
             if (!isset($values[$this->primaryKey]))
