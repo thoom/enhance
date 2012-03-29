@@ -210,6 +210,15 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetGet($offset)
     {
+        $overrideOffset = 'get';
+        $pieces = explode('_', $offset);
+        foreach ($pieces as $piece) {
+            $overrideOffset .= ucfirst($piece);
+        }
+
+        if (method_exists($this, $overrideOffset))
+            return $this->$overrideOffset();
+
         if (array_key_exists($offset, $this->modified))
             return $this->modified[$offset];
 
@@ -236,10 +245,19 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetSet($offset, $value)
     {
-        if (array_key_exists($offset, $this->values))
+        $overrideOffset = 'set';
+        $pieces = explode('_', $offset);
+        foreach ($pieces as $piece) {
+            $overrideOffset .= ucfirst($piece);
+        }
+
+        if (method_exists($this, $overrideOffset)) {
+            $this->$overrideOffset($value);
+        } else if (array_key_exists($offset, $this->values)) {
             $this->modified[$offset] = $value;
-        else
+        } else {
             $this->container[$offset] = $value;
+        }
     }
 
     /**
