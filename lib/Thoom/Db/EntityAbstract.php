@@ -12,9 +12,9 @@
 
 namespace Thoom\Db;
 
-use ArrayAccess, ArrayIterator, Countable, BadMethodCallException, InvalidArgumentException, IteratorAggregate, Serializable, Traversable;
+use ArrayAccess, ArrayIterator, Countable, BadMethodCallException, InvalidArgumentException, IteratorAggregate, Serializable;
 
-abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Serializable, Traversable
+abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Serializable
 {
     /**
      * This should only hold data that is considered committed and has a key in the columns array.
@@ -61,8 +61,8 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
     {
         $parsed = array('columns' => array(), 'container' => array());
         foreach ($data as $key => $val) {
-            if (in_array($key, $this->columns()))
-                $parsed['columms'][$key] = $val;
+            if (array_key_exists($key, $this->columns()))
+                $parsed['columns'][$key] = $val;
             else
                 $parsed['container'][$key] = $val;
         }
@@ -188,7 +188,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetExists($offset)
     {
-        return in_array($offset, $this->columns()) || array_key_exists($offset, $this->container);
+        return isset($this->values[$offset]) || isset($this->modified[$offset]) || isset($this->container[$offset]);
     }
 
     /**
@@ -202,13 +202,11 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetGet($offset)
     {
-        if (in_array($offset, $this->columns())) {
-            if (array_key_exists($offset, $this->modified))
-                return $this->modified[$offset];
+        if (array_key_exists($offset, $this->modified))
+            return $this->modified[$offset];
 
-            if (array_key_exists($offset, $this->values))
-                return $this->values[$offset];
-        }
+        if (array_key_exists($offset, $this->values))
+            return $this->values[$offset];
 
         if (isset($this->container[$offset]))
             return $this->container[$offset];
@@ -230,10 +228,10 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function offsetSet($offset, $value)
     {
-        if (in_array($offset, $this->columns()))
+        if (array_key_exists($offset, $this->values))
             $this->modified[$offset] = $value;
-
-        $this->container[$offset] = $value;
+        else
+            $this->container[$offset] = $value;
     }
 
     /**

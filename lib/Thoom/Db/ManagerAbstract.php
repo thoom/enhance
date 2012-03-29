@@ -126,7 +126,7 @@ abstract class ManagerAbstract
      */
     public function read($primaryKey)
     {
-        $data = $this->db->fetchAssoc("SELECT * FROM {static::table()} WHERE {static::primaryKey()} = ?", array($primaryKey));
+        $data = $this->db->fetchAssoc("SELECT * FROM " . static::table() . " WHERE " . static::primaryKey() . " = ?", array($primaryKey));
         if ($data)
             return $this->fresh($data, false);
 
@@ -158,7 +158,7 @@ abstract class ManagerAbstract
      */
     public function delete(EntityAbstract $entity)
     {
-        return $this->db->executeUpdate("DELETE FROM {static::table()} WHERE {static::primaryKey()} = ?", array($entity[static::primaryKey()]));
+        return $this->db->executeUpdate("DELETE FROM " . static::table() . " WHERE " . static::primaryKey() . " = ?", array($entity[static::primaryKey()]));
     }
 
     /**
@@ -167,7 +167,7 @@ abstract class ManagerAbstract
      */
     public function describe()
     {
-        return $this->db->fetchAll("DESCRIBE {static::table()}");
+        return $this->db->fetchAll("DESCRIBE " . static::table());
     }
 
     static public function columns()
