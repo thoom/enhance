@@ -126,6 +126,23 @@ Then in your $app _controllers_ you can access the manager using DI:
         return $app['twig']->render('index.html.twig', array('name' => $user['name'], 'email' => $user['email']));
     });
 
+Whenever you send an entity to the Manager to update the database, you will need to refresh the entity if you want it to
+reflect the changes made to the database (i.e. via triggers, etc).
+
+Here's an example of creating a new user named Bruce Banner and then refreshing the entity so that the data exists:
+
+    $user = $app['mgr.user']->fresh();
+    $user['name'] = 'Bruce Banner';
+
+    $id = $app['mgr.user']->create($user);
+
+    if (!$id){
+        //Handle this error condition
+
+    $user['id'] = $id;
+    $app['mgr.user']->refresh($user);
+
+
 Thoom\\Generator
 ----------------
 

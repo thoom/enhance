@@ -73,20 +73,19 @@ abstract class ManagerAbstract
      * Creates a new entity record in the database
      *
      * @param EntityAbstract $entity
-     * @return EntityAbstract|bool
+     * @return int|bool
      */
     public function create(EntityAbstract $entity)
     {
         $values = $entity->modifiedArray();
 
-        //TODO: Introspect the values array and add default values if any keys are missing from the values array.
         //TODO: If a DateTime object is passed in the values array, output to SQL format (Only handle this if DBAL doesn't)
         $results = $this->db->insert($this->table, $values);
         if ($results) {
-            if (!isset($values[$this->primaryKey]))
-                $values[$this->primaryKey] = $this->db->lastInsertId();
+            if (isset($values[$this->primaryKey]))
+                return $values[$this->primaryKey];
 
-            return $entity->resetData($values);
+            return $this->db->lastInsertId();
         }
 
         return false;
@@ -120,7 +119,7 @@ abstract class ManagerAbstract
      */
     public function refresh(EntityAbstract $entity)
     {
-        $newEntity = $this->read($entity[$this->primaryKey]);
+        $newEntity = $this->read($this->primaryKey($entity));
         if ($newEntity instanceof $this->entity)
             return $entity->resetData($newEntity);
 
@@ -144,30 +143,45 @@ abstract class ManagerAbstract
 
     /**
      * Updates an entity instance.
+     * Note: This does not refresh the entity!
      *
      * @param EntityAbstract $entity
-     * @return EntityAbstract
+     * @return int Number of rows affected
      */
     public function update(EntityAbstract $entity)
     {
         $values = $entity->modifiedArray();
 
-        //TODO: Add functionality to update the table...
-        //Only pull in the modified data... not the original
+        $valCount = count($values);
+        if ($valCount < 1)
+            return $entity;
 
-        return $entity->resetData($values);
+        $keys = array();
+        $bind = array();
+        $i = 0;
+
+        foreach ($values as $key => $val) {
+            $keys[] = "$key = :$key$i";
+            $bind[":$key$i"] = $val;
+            $i++;
+        }
+
+        $bind[":$this->primaryKey$i"] = $this->primaryKey($entity);
+        $query = "UPDATE $this->table SET " . implode(', ', $keys) . " WHERE $this->primaryKey = :$this->primaryKey$i";
+
+        return $this->db->executeUpdate($query, $bind);
     }
 
     /**
      * Deletes an existing entity
      * <br>Note that this doesn't empty the entity!
      *
-     * @param \Thoom\Db\EntityAbstract $entity
+     * @param EntityAbstract $entity
      * @return int Number of rows affected
      */
     public function delete(EntityAbstract $entity)
     {
-        return $this->db->executeUpdate("DELETE FROM $this->table WHERE $this->primaryKey = ?", array($entity[$this->primaryKey]));
+        return $this->db->executeUpdate("DELETE FROM $this->table WHERE $this->primaryKey = ?", array($this->primaryKey($entity)));
     }
 
     /**
@@ -179,6 +193,29 @@ abstract class ManagerAbstract
     {
         return $this->db->fetchAll("DESCRIBE " . $this->table);
     }
+
+//    /**
+//     * Convenience method that will either create or update an entity based on a few factors:
+//     * <br>If the primaryKey value is not found, it will forward the request to create
+//     * <br>If the primaryKey value is found, it will perform an INSERT ... ON DUPLICATE KEY UPDATE
+//     * @param EntityAbstract $entity
+//     * @return bool|int
+//     */
+//    public function save(EntityAbstract $entity)
+//    {
+//        if (!$this->primaryKey($entity))
+//            return $this->create($entity);
+//
+//       $query = "INSERT IGNORE INTO ##keys## VALUES () ON DUPLICATE KEY UPDATE ";
+//
+//
+//        $result = $this->update($entity);
+//        if (!$result)
+//            return $this->create($entity);
+//
+//       return $result;
+//    }
+
 
     /**
      * Get the manager's columns array definition
