@@ -8,7 +8,7 @@ namespace Thoom\Generator;
 
 class Uuid
 {
-    public static $pattern = '/^[a-f\d]{8}(-[a-f\d]{4}){4}[a-f\d]{8}$/i';
+    public static $pattern = '^[a-f\d]{8}(-[a-f\d]{4}){4}[a-f\d]{8}$';
 
     public static function create()
     {
@@ -35,7 +35,6 @@ class Uuid
 
     public static function validate($string)
     {
-        return (bool)preg_match(self::$pattern, $string);
+        return (bool)preg_match('/' . self::$pattern . '/', $string);
     }
-
 }
