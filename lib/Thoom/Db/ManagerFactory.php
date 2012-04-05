@@ -66,7 +66,7 @@ class ManagerFactory
     {
         $className = $this->className($name);
         if (!isset($this->managers[$className]))
-            $this->managers[$className] == new $className($this->db);
+            $this->managers[$className] = new $className($this->db);
 
         return $this->managers[$className];
     }
