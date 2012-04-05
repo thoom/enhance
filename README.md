@@ -8,6 +8,34 @@ This is a collection of classes that are being developed to enhance using the Si
 simple websites. It has some utility classes and some abstract database classes that can be extended to enhance the Doctrine
 DBAL support that is included with Silex.
 
+Thoom\\Provider\\DbServiceProvider
+----------------------------------
+
+The __DbServiceProvider__ implements the Silex\\ServiceProviderInterface. This provider also registers
+Silex\\Provider\\DoctrineServiceProvider so it doesn't need to be registered separately. In addition, this provider adds
+a Thoom\\DB\\ManagerFactory object to the DI container. This makes it possible to access managers without adding each manager
+to the Silex application.
+
+There is only one additional parameter that you need to pass in the register array:
+
+  * __db.manager.format__: This is your managers' fully qualified name in sprintf format. For instance, if you had managers
+   named _My\\Db\\UserManager_ and _My\\Db\\AppManager_, the format would be _My\\Db\\%sManager_. This format is more fully
+   explained in the Thoom\\DB\\ManagerFactory section.
+
+To register the provider:
+
+    $app->register(new Thoom\Provider\DbServiceProvider(),
+        array(
+            'db.options' => array(
+                'host' => 'localhost',
+                'dbname' => 'mydb',
+                'user' => 'user',
+                'password' => 'pass',
+            ),
+            'db.manager.format' => 'My\Db\%sManager'
+        ));
+
+
 Thoom\\Db
 ---------
 
@@ -26,15 +54,14 @@ arrays: values, modified, and container.
 Each array serves a distinct purpose:
 
  * __values__: Data in this array is extremely protected, filled in only when the entity is created or in the resetData method.
- The values should represent current database values. This array is compared by the manager when it comes time to generate
- the SQL query to perform an insert or update. This array is the only one stored on serialization!
+ The values should represent current database values. This array is the only one stored on serialization!
 
  * __modified__: This array is filled in whenever data is posted using ArrayAccess or __set methods. Its values are used
  when inserting/updating records in the database.
 
- * __container__: Any values passed to the entity that are not found in the columns array (defined in the manager) are
- placed in the container array instead. The purpose of the container is to provide a space for additional data to be
- attached that doesn't pollute the table data.
+ * __container__: Any values passed to the entity whose keys are not found in the values array are placed in the container
+ array instead. The purpose of the container is to provide a space for additional data to be attached that doesn't
+ pollute the table data.
 
 #### Usage
 
@@ -110,37 +137,62 @@ The manager uses Dependency Injection to receive its connection to the database.
 
 #### Usage
 
-To use with Silex, I recommend using its DI capability, with the database connection stored in $app['db']:
-
-    $app['mgr.user'] = $app->share(function($app)
-    {
-        return new MyNamespace\UserManager($app['db']);
-    });
-
-Then in your $app _controllers_ you can access the manager using DI:
+To use with Silex, I recommend using the Thoom\\Provider\\DbServiceProvider. This will create an object reference to the
+ManagerFactory, which is explained in detail below. However, to use the manager generically in a Silex _controller_:
 
     $app->get('/user/{primary_key}', function($primary_key) use ($app)
     {
-        $user = $app['mgr.user']->read($primary_key);
+        $userManager = new My\DBNamespace\UserManager($app['db']);
+        $user = $userManager->read($primary_key);
 
-        return $app['twig']->render('index.html.twig', array('name' => $user['name'], 'email' => $user['email']));
+        return $app['twig']->render('index.html.twig', array('name' => $user['fullName'], 'email' => $user['email']));
     });
+
 
 Whenever you send an entity to the Manager to update the database, you will need to refresh the entity if you want it to
 reflect the changes made to the database (i.e. via triggers, etc).
 
 Here's an example of creating a new user named Bruce Banner and then refreshing the entity so that the data exists:
 
-    $user = $app['mgr.user']->fresh();
-    $user['name'] = 'Bruce Banner';
+    $user = $userManager->fresh();
+    $user['fullName'] = 'Bruce Banner';
 
-    $id = $app['mgr.user']->create($user);
+    $id = $userManager->create($user);
 
     if (!$id){
         //Handle this error condition
 
     $user['id'] = $id;
-    $app['mgr.user']->refresh($user);
+    $userManager->refresh($user);
+
+### The manager factory
+
+An alternative to creating a manager every time is to use the ManagerFactory. Once instantiated, the factory object has
+two methods:
+
+  * __get($name)__: This returns an instance of the object based on the name. If an object has already been created, it
+  returns the object being stored.
+
+  * __fresh($name)__: This always returns a new instance of the object based on the name.
+
+#### Usage
+
+Using the Thoom\\Provider\\DbServiceProvider in a Silex _controller_:
+
+    $app->get('/user/{primary_key}', function($primary_key) use ($app)
+    {
+        $user = $app['dbm']->get('User')->read($primary_key);
+
+        return $app['twig']->render('index.html.twig', array('name' => $user['name'], 'email' => $user['email']));
+    });
+
+To create an object manually:
+
+    $factory = new Thoom\Db\ManagerFactory($db, 'My\Db\%sManager');
+    $userManager = $factory->get('User');
+
+The second argument for the factory is the format that your Managers are named in a printf format. You only need to pass
+in the missing piece of the format in the _get_ and _fresh_ methods.
 
 
 Thoom\\Generator
