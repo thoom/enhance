@@ -27,6 +27,12 @@ abstract class ManagerAbstract
     protected $db;
 
     /**
+     * Instance of the ManagerFactory if one was created
+     * @var ManagerFactory
+     */
+    protected $factory;
+
+    /**
      * The entity class name that will this class will manage
      *
      * @var string
@@ -46,6 +52,50 @@ abstract class ManagerAbstract
      * @var array
      */
     protected $columns = array();
+
+    /**
+     * Stores the table relationships. Column keys are the database column names.
+     * Relationships hooks are defined in a QueryBuilder-styled array called "conditions".
+     *
+     * Example: <pre>
+     * protected $relationships = array(
+     *      'address' => array(
+     *          'manager' => 'My\Db\User\AddressManager',
+     *          'relation' => 'HasOne',
+     *          'conditions' => array(
+     *              'where' => array(
+     *                  array(
+     *                      'query' => 't.user_id',
+     *                      'value' => 'entity.id',
+     *                      'type' => 'AND',
+     *                  ),
+     *                  array(
+     *                      'query' => 't.status',
+     *                      'value' => 'active',
+     *                  )
+     *              )
+     *          )
+     *      ),
+     *      'email' => array(
+     *          'manager' => 'My\Db\User\EmailManager',
+     *          'relation' => 'HasMany',
+     *          'conditions' => array(
+     *              'where' => array(
+     *                  array(
+     *                      'query' => 't.user_id'
+     *                      'value' => 'entity.user_id'
+     *                  array (
+     *                      'query' => 't.status <> ? '
+     *                      'value' => 'disabled'
+     *                  )
+     *              )
+     *          )
+     *      ),
+     * );
+     *
+     * @var array
+     */
+    protected $relationships = array();
 
     /**
      * The name of the primary key's field
@@ -105,6 +155,10 @@ abstract class ManagerAbstract
         if ($isModifiedArray) {
             /* @var $entity EntityAbstract */
             $entity = new $this->entity($this->columns);
+
+            if ($this->relationships)
+                $entity->setRelationships(new RelationshipManager($this->relationships, $entity, $this->factory));
+
             return $entity->data($data);
         }
 
@@ -194,10 +248,60 @@ abstract class ManagerAbstract
         return $this->db->fetchAll("DESCRIBE " . $this->table);
     }
 
+    /**
+     * NYI: Return the first entity filtered by the conditions array sent
+     *
+     * @param array|string|QueryBuilder $query
+     * @param array $params
+     * @return bool|EntityAbstract
+     */
+    public function fetch($query, array $params = array())
+    {
+        if (is_array($query))
+            $query = new QueryBuilder($this->table, $this->db, $query);
+
+        if (count($params) < 1 && $query instanceof QueryBuilder)
+            $params =  $query->params();
+
+        $data = $this->db->fetchAssoc($query, $params);
+        if ($data)
+            return $this->fresh($data, false);
+
+        return false;
+    }
+
+    /**
+     * NYI: Return an EntityCollection of entities filtered by the conditions array sent
+     *
+     * @param array|string|QueryBuilder $query
+     * @param array $params
+     * @return bool|EntityCollection
+     */
+    public function fetchAll($query, array $params = array())
+    {
+        if (is_array($query))
+            $query = new QueryBuilder($this->table, $this->db, $query);
+
+        if (count($params) < 1 && $query instanceof QueryBuilder)
+            $params =  $query->params();
+
+        $data = $this->db->fetchAll($query, $params);
+
+        if ($data) {
+            $collection = new EntityCollection();
+            foreach ($data as $item_data) {
+                $collection->attach($this->fresh($item_data, false));
+            }
+            return $collection;
+        }
+
+        return false;
+    }
+
 //    /**
 //     * Convenience method that will either create or update an entity based on a few factors:
 //     * <br>If the primaryKey value is not found, it will forward the request to create
-//     * <br>If the primaryKey value is found, it will perform an INSERT ... ON DUPLICATE KEY UPDATE
+//     * <br>If the primaryKey value is found, it will perform an UPDATE. If no changes are found, it will forward to the create method
 //     * @param EntityAbstract $entity
 //     * @return bool|int
 //     */
@@ -205,9 +309,6 @@ abstract class ManagerAbstract
 //    {
 //        if (!$this->primaryKey($entity))
 //            return $this->create($entity);
-//
-//       $query = "INSERT IGNORE INTO ##keys## VALUES () ON DUPLICATE KEY UPDATE ";
-//
 //
 //        $result = $this->update($entity);
 //        if (!$result)
@@ -227,6 +328,11 @@ abstract class ManagerAbstract
         return $this->columns;
     }
 
+    public function db()
+    {
+        return $this->db;
+    }
+
     /**
      * Get the primary key value for the entity passed
      *
@@ -236,5 +342,21 @@ abstract class ManagerAbstract
     public function primaryKey(EntityAbstract $entity)
     {
         return $entity[$this->primaryKey];
+    }
+
+    public function table()
+    {
+        return $this->table;
+    }
+
+    /**
+     * Instance of the ManagerFactory that created the object
+     * The factory is used for relationship building
+     *
+     * @param ManagerFactory $factory
+     */
+    public function setFactory(ManagerFactory $factory)
+    {
+        $this->factory = $factory;
     }
 }

@@ -40,6 +40,14 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
     protected $container = array();
 
     /**
+     * If the manager has defined relations, then a RelationsManager object will have been generated to assist retrieving
+     * any relationships.
+     *
+     * @var RelationshipManager
+     */
+    protected $relationships;
+
+    /**
      * Builds the entity and populates the values array
      * <br>The columns array should be built with all of the columns in the database as the keys.
      *
@@ -80,6 +88,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      * Values are added to the modified array rather than the data array
      *
      * @param array|EntityAbstract $values
+     * @throws \InvalidArgumentException
      * @return array
      */
     public function data($values)
@@ -106,6 +115,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      *
      * @param array|EntityAbstract $data
      * @param bool $resetContainer
+     * @throws \InvalidArgumentException
      * @return EntityAbstract
      */
     public function resetData($data = array(), $resetContainer = false)
@@ -127,13 +137,34 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
     }
 
     /**
-     * Empty's the container array that stores arbitrary data
+     * Empties the container array that stores arbitrary data
      *
      * @return EntityAbstract
      */
     public function resetContainer()
     {
         $this->container = array();
+
+        return $this;
+    }
+
+
+    public function relationship($relationship)
+    {
+        if (!$relationship instanceof RelationshipManager)
+            return false;
+
+        return $this->relationships->get($relationship);
+    }
+
+    public function relationships()
+    {
+        return $this->relationships;
+    }
+
+    public function setRelationships(RelationshipManager $relationships)
+    {
+        $this->relationships = $relationships;
 
         return $this;
     }
@@ -281,8 +312,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      * (PHP 5 &gt;= 5.1.0)<br/>
      * Retrieve an external iterator
      * @link http://php.net/manual/en/iteratoraggregate.getiterator.php
-     * @return Traversable An instance of an object implementing Iterator or
-     * Traversable
+     * @return \Traversable An instance of an object implementing Iterator or Traversable
      */
     public function getIterator()
     {

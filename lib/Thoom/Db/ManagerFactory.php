@@ -21,19 +21,19 @@ class ManagerFactory
      *
      * @var \Doctrine\DBAL\Connection
      */
-    protected $db;
+    static protected $db;
 
     /**
      * An array of manager objects returned in the get method
      * @var array
      */
-    protected $managers = array();
+    static protected $managers = array();
 
     /**
      * Manager format used for short names
      * @var string
      */
-    protected $managerFormat;
+    static protected $managerFormat = "%sManager";
 
     /**
      * A callable reference used to alter the name passed in the get/fresh methods before it's used to create an instance
@@ -47,12 +47,14 @@ class ManagerFactory
      *
      * @param \Doctrine\DBAL\Connection $db
      * @param string $managerFormat string in a printf format used in get/fresh methods
-     * @param null $formatCallback
+     * @param mixed $formatCallback
      */
-    public function __construct(Connection $db, $managerFormat, $formatCallback = null)
+    public function __construct(Connection $db, $managerFormat = null, $formatCallback = null)
     {
-        $this->db = $db;
-        $this->managerFormat = $managerFormat;
+        self::$db = $db;
+
+        if ($managerFormat)
+            static::$managerFormat = $managerFormat;
     }
 
     /**
@@ -60,26 +62,33 @@ class ManagerFactory
      * If an object already exists, it returns that one
      *
      * @param string $name
-     * @return EntityAbstract
+     * @return ManagerAbstract
      */
     public function get($name)
     {
         $className = $this->className($name);
-        if (!isset($this->managers[$className]))
-            $this->managers[$className] = new $className($this->db);
+        if (!isset(static::$managers[$className]))
+            static::$managers[$className] = new $className(self::$db);
 
-        return $this->managers[$className];
+        static::$managers[$className]->setFactory($this);
+
+        return static::$managers[$className];
     }
 
     /**
      * Always returns a new instance of the manager based on the name passed
      * @param string $name
-     * @return EntityAbstract
+     * @return ManagerAbstract
      */
     public function fresh($name)
     {
         $className = $this->className($name);
-        return new $className($this->db);
+        $class = new $className(self::$db);
+        /* @var $class ManagerAbstract */
+
+        $class->setFactory($this);
+
+        return $class;
     }
 
     /**
@@ -93,12 +102,17 @@ class ManagerFactory
             if (is_callable($this->formatCallback))
                 $name = array_map($this->formatCallback, $name);
 
-            return vsprintf($this->managerFormat, $name);
+            return vsprintf(static::$managerFormat, $name);
         }
 
         if (is_callable($this->formatCallback))
             $name = call_user_func_array($this->formatCallback, array($name));
 
-        return sprintf($this->managerFormat, $name);
+        return sprintf(static::$managerFormat, $name);
+    }
+
+    static public function connection()
+    {
+        return self::$db;
     }
 }
