@@ -66,13 +66,14 @@ class ManagerFactory
      */
     public function get($name)
     {
-        $className = $this->className($name);
-        if (!isset(static::$managers[$className]))
-            static::$managers[$className] = new $className(self::$db);
+        if (!isset(static::$managers[$name])){
+            $className = $this->className($name);
+            static::$managers[$name] = new $className(self::$db);
+        }
 
-        static::$managers[$className]->setFactory($this);
+        static::$managers[$name]->setFactory($this);
 
-        return static::$managers[$className];
+        return static::$managers[$name];
     }
 
     /**
