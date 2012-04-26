@@ -7,7 +7,7 @@
  *
  * @since 4/4/12 5:39 PM
  */
-namespace Thoom\Provider;
+namespace Thoom\Silex;
 
 use Silex\Application;
 use Silex\Provider\DoctrineServiceProvider;
