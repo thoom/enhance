@@ -29,8 +29,8 @@ class DbServiceProvider implements ServiceProviderInterface
 
         $app['dbm'] = $app->share(function() use ($app)
         {
-            $callback = isset($app['db.manager.callback']) ? $app['db.manager.callback'] : null;
-            return new ManagerFactory($app['db'], $app['db.manager.format'], $callback);
+            $callback = isset($app['dbm.options']['callback']) ? $app['dbm.options']['callback'] : null;
+            return new ManagerFactory($app['db'], $app['dbm.options']['format'], $callback);
         });
     }
 }

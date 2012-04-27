@@ -4,11 +4,13 @@ Thoom Enhance
 Summary
 -------
 
+__NOTE: These classes are still in development and change frequently. Use with caution and at your own risk for now!__
+
 This is a collection of classes that are being developed to enhance using the Silex framework for building
 simple websites. It has some utility classes and some abstract database classes that can be extended to enhance the Doctrine
 DBAL support that is included with Silex.
 
-Thoom\\Provider\\DbServiceProvider
+Thoom\\Silex\\DbServiceProvider
 ----------------------------------
 
 The __DbServiceProvider__ implements the Silex\\ServiceProviderInterface. This provider also registers
@@ -18,13 +20,13 @@ to the Silex application.
 
 There is only one additional parameter that you need to pass in the register array:
 
-  * __db.manager.format__: This is your managers' fully qualified name in sprintf format. For instance, if you had managers
-   named _My\\Db\\UserManager_ and _My\\Db\\AppManager_, the format would be _My\\Db\\%sManager_. This format is more fully
-   explained in the Thoom\\DB\\ManagerFactory section.
+  * __dbm.options__: This array collection only contains one key at the moment: *format*. This is your managers' fully qualified
+   name in printf format. For instance, if you had managers named _My\\Db\\UserManager_ and _My\\Db\\AppManager_, the format
+   would be _My\\Db\\%sManager_.
 
 To register the provider:
 
-    $app->register(new Thoom\Provider\DbServiceProvider(),
+    $app->register(new Thoom\Silex\DbServiceProvider(),
         array(
             'db.options' => array(
                 'host' => 'localhost',
@@ -32,7 +34,9 @@ To register the provider:
                 'user' => 'user',
                 'password' => 'pass',
             ),
-            'db.manager.format' => 'My\Db\%sManager'
+            'dbm.options' => array(
+                'format' => 'My\Db\%sManager'
+            )
         ));
 
 
@@ -137,7 +141,7 @@ The manager uses Dependency Injection to receive its connection to the database.
 
 #### Usage
 
-To use with Silex, I recommend using the Thoom\\Provider\\DbServiceProvider. This will create an object reference to the
+To use with Silex, I recommend using the Thoom\\Silex\\DbServiceProvider. This will create an object reference to the
 ManagerFactory, which is explained in detail below. However, to use the manager generically in a Silex _controller_:
 
     $app->get('/user/{primary_key}', function($primary_key) use ($app)
@@ -177,7 +181,7 @@ two methods:
 
 #### Usage
 
-Using the Thoom\\Provider\\DbServiceProvider in a Silex _controller_:
+Using the Thoom\\Silex\\DbServiceProvider in a Silex _controller_:
 
     $app->get('/user/{primary_key}', function($primary_key) use ($app)
     {
