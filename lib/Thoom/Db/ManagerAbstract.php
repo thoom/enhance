@@ -142,6 +142,22 @@ abstract class ManagerAbstract
     }
 
     /**
+     * Creates a new entity record and updates the entity to reflect the changes
+     *
+     * @param EntityAbstract $entity
+     * @return bool|EntityAbstract
+     */
+    public function createAndRefresh(EntityAbstract $entity)
+    {
+        $id = $this->create($entity);
+        if (!$id)
+            return false;
+
+        $entity[$this->primaryKey] = $id;
+        return $this->refresh($entity);
+    }
+
+    /**
      * A Factory method that returns a fresh instance of the manager's entity
      * <br>If isModifiedArray is false, the array will be populated to the values array
      * <br>If isModifiedArray is true, the array will be populated to the modified array and used in subsequent db updates
@@ -227,6 +243,22 @@ abstract class ManagerAbstract
     }
 
     /**
+     * Updates an entity instance and refreshes the entity
+     *
+     * @param EntityAbstract $entity
+     * @return int|EntityAbstract
+     */
+    public function updateAndRefresh(EntityAbstract $entity)
+    {
+        $affected = $this->update($entity);
+        if (!$affected)
+            return 0;
+
+        return $this->refresh($entity);
+    }
+
+
+    /**
      * Deletes an existing entity
      * <br>Note that this doesn't empty the entity!
      *
@@ -261,7 +293,7 @@ abstract class ManagerAbstract
             $query = new QueryBuilder($this->table, $this->db, $query);
 
         if (count($params) < 1 && $query instanceof QueryBuilder)
-            $params =  $query->params();
+            $params = $query->params();
 
         $data = $this->db->fetchAssoc($query, $params);
         if ($data)
@@ -283,7 +315,7 @@ abstract class ManagerAbstract
             $query = new QueryBuilder($this->table, $this->db, $query);
 
         if (count($params) < 1 && $query instanceof QueryBuilder)
-            $params =  $query->params();
+            $params = $query->params();
 
         $data = $this->db->fetchAll($query, $params);
 
