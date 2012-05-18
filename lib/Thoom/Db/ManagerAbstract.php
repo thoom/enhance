@@ -111,6 +111,10 @@ abstract class ManagerAbstract
      */
     protected $table;
 
+
+    protected $_colsprocessed = null;
+
+
     public function __construct(Connection $db)
     {
         $this->db = $db;
@@ -170,7 +174,7 @@ abstract class ManagerAbstract
     {
         if ($isModifiedArray) {
             /* @var $entity EntityAbstract */
-            $entity = new $this->entity($this->columns);
+            $entity = new $this->entity($this->columns());
 
             if ($this->relationships)
                 $entity->setRelationships(new RelationshipManager($this->relationships, $entity, $this->factory));
@@ -178,7 +182,7 @@ abstract class ManagerAbstract
             return $entity->data($data);
         }
 
-        return new $this->entity($this->columns, $data);
+        return new $this->entity($this->columns(), $data);
     }
 
     /**
@@ -357,7 +361,15 @@ abstract class ManagerAbstract
      */
     public function columns()
     {
-        return $this->columns;
+        if (!$this->_colsprocessed){
+            $arr = array();
+            foreach ($this->columns as $key => $val){
+                $arr[] = is_array($val)? $key : $val;
+            }
+            $this->_colsprocessed = $arr;
+        }
+
+        return $this->_colsprocessed;
     }
 
     public function db()

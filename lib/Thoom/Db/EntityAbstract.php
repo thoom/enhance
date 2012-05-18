@@ -57,7 +57,7 @@ abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggrega
      */
     public function __construct(array $columns, array $data = array())
     {
-        $this->values = array_fill_keys(array_keys($columns), null);
+        $this->values = array_fill_keys($columns, null);
 
         $parsed = $this->parseArrayData($data);
 

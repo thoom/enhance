@@ -69,6 +69,15 @@ Each array serves a distinct purpose:
 
 #### Usage
 
+Creating an entity in its simplest form is easy:
+
+    namespace My\DbNamespace;
+
+    use Thoom\Db\EntityAbstract;
+
+    class User extends EntityAbstract{}
+
+
 There are several ways to access the data in an entity. Here are a few options:
 
   * As an object:
@@ -109,7 +118,7 @@ name as firstName and lastName. You don't want to have to concat these values al
     {
         protected function getFullName()
         {
-           return $this->values['firstName'] . ' ' . $this->values['lastName'];
+           return $this['firstName'] . ' ' . $this['lastName'];
         }
     }
 
@@ -133,13 +142,45 @@ Voila!
 
 ### The manager
 
-The manager is the entity's interface with the database. The manager behaves as a factory, where it creates new entities and injects
+The manager is the entity's interface with the database. The manager behaves as an entity factory, where it creates new entities and injects
 any dependencies. It houses all data about the table it represents, including the table's name, the columns with their default
 values and types, the primary key's field name, etc.
 
 The manager uses Dependency Injection to receive its connection to the database.
 
 #### Usage
+
+There are a few properties that should be defined when creating a new manager. Here's an example:
+
+    namespace My\DbNamespace;
+
+    use Thoom\Db\ManagerAbstract;
+
+    class UserManager extends ManagerAbstract
+    {
+        protected $entity = 'My\DbNamespace\User';
+
+        protected $columns = array(
+            'uid',
+            'firstName',
+            'lastName',
+            'username',
+            'password',
+            'modified'
+        );
+
+        protected $primaryKey = 'uid';
+
+        protected $table = 'users';
+    }
+
+Let's review these properties:
+
+ * __entity__: This is the fully qualified name of the entity class that will be returned from CRUD calls.
+ * __columns__: This is an array of the database column names. These are used to determine what data in the entity is saved to the database.
+ * __primaryKey__: The table's primary key column name.
+ * __table__: The name of the table the manager, um, manages. If this field is not populated, the manager will set it based on the class's name.
+
 
 To use with Silex, I recommend using the Thoom\\Silex\\DbServiceProvider. This will create an object reference to the
 ManagerFactory, which is explained in detail below. However, to use the manager generically in a Silex _controller_:
@@ -168,6 +209,18 @@ Here's an example of creating a new user named Bruce Banner and then refreshing 
 
     $user['id'] = $id;
     $userManager->refresh($user);
+
+Alternatively, you can use a convenience method (available for both create and update methods):
+
+    $user = $userManager->fresh();
+    $user['fullName'] = 'Bruce Banner';
+
+    $user = $userManager->createAndRefresh($user);
+
+    if (!$user){
+        //Handle this error condition
+
+
 
 ### The manager factory
 
