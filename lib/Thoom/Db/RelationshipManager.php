@@ -70,10 +70,8 @@ class RelationshipManager
 
         $original_params = $query->params();
         $params = array();
-        foreach ($original_params as $param)
-        {
-            if (stripos($param, 'entity.' === 0))
-            {
+        foreach ($original_params as $param) {
+            if (stripos($param, 'entity.' === 0)) {
                 $param = $this->entity[substr($param, 7)];
             }
             $params[] = $param;

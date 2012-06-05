@@ -361,10 +361,10 @@ abstract class ManagerAbstract
      */
     public function columns()
     {
-        if (!$this->_colsprocessed){
+        if (!$this->_colsprocessed) {
             $arr = array();
-            foreach ($this->columns as $key => $val){
-                $arr[] = is_array($val)? $key : $val;
+            foreach ($this->columns as $key => $val) {
+                $arr[] = is_array($val) ? $key : $val;
             }
             $this->_colsprocessed = $arr;
         }

@@ -2,9 +2,9 @@
     "name":"thoom/enhance",
     "description":"PHP 5.3 classes used to enhance a Silex-based website",
     "type":"library",
-    "keywords": ["doctrine2", "silex"],
-    "homepage": "http://thoomtech.com",
-    "license": "MIT",
+    "keywords":["doctrine2", "silex"],
+    "homepage":"http://thoomtech.com",
+    "license":"MIT",
     "require":{
         "php":">=5.3.2",
         "doctrine/dbal":">=2.1, < 2.3"

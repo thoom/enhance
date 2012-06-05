@@ -12,9 +12,11 @@
 
 namespace Thoom\Db;
 
-use ArrayAccess, ArrayIterator, Countable, BadMethodCallException, InvalidArgumentException, IteratorAggregate, Serializable;
+use ArrayIterator;
+use BadMethodCallException;
+use InvalidArgumentException;
 
-abstract class EntityAbstract implements ArrayAccess, Countable, IteratorAggregate, Serializable
+abstract class EntityAbstract implements \ArrayAccess, \Countable, \IteratorAggregate, \Serializable
 {
     /**
      * This should only hold data that is considered committed and has a key in the manager's columns array.
