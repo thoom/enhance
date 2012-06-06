@@ -44,7 +44,7 @@ class QueryBuilder
 
     protected function buildQuery()
     {
-        $query = $this->db->createQueryBuilder()->select()->from($this->tablename, 't');
+        $query = $this->db->createQueryBuilder()->select('t.*')->from($this->tablename, 't');
 
         foreach ($this->conditions as $key => $condition) {
             if ($key == 'where')
@@ -74,24 +74,33 @@ class QueryBuilder
      */
     protected function where(array $conditions, QBuilder $qbuilder)
     {
-        foreach ($conditions as $condition) {
-            $query = $condition['condition'];
-            if (stripos($query, '?') === false)
-                $query .= " = ?";
-
-            $type = isset($condition['type']) ? strtoupper($condition['type']) : 'AND';
-            if ($type == 'AND')
-                $qbuilder->where($query);
-            else
-                $qbuilder->orWhere($query);
-
-            if (isset($condition['value']))
-                $this->params[] = $condition['value'];
+        if (isset($conditions['condition'])) {
+            $this->processWhereCondition($conditions, $qbuilder);
+            return;
         }
+        foreach ($conditions as $condition) {
+            $this->processWhereCondition($condition, $qbuilder);
+        }
+    }
+
+    protected function processWhereCondition(array $condition, QBuilder $qbuilder)
+    {
+        $query = $condition['condition'];
+        if (stripos($query, '?') === false)
+            $query .= " = ?";
+
+        $type = isset($condition['type']) ? strtoupper($condition['type']) : 'AND';
+        if ($type == 'AND')
+            $qbuilder->where($query);
+        else
+            $qbuilder->orWhere($query);
+
+        if (isset($condition['value']))
+            $this->params[] = $condition['value'];
     }
 
     public function __toString()
     {
-        return $this->query();
+        return (string)$this->query();
     }
 }
