@@ -91,7 +91,7 @@ class QueryBuilder
 
         $type = isset($condition['type']) ? strtoupper($condition['type']) : 'AND';
         if ($type == 'AND')
-            $qbuilder->where($query);
+            $qbuilder->andWhere($query);
         else
             $qbuilder->orWhere($query);
 
