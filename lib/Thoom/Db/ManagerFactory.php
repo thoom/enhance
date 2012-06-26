@@ -4,8 +4,8 @@
  *
  * Creates managers
  *
- * @author Zach Peacock <zpeacock@apptime.com>
- * @copyright Copyright (c) 2012, AppTime, LLC
+ * @author Z.d. Peacock <zdpeacock@thoomtech.com>
+ * @copyright (c) 2011 Thoom Technologies LLC
  *
  * @since 4/4/12 5:52 PM
  */

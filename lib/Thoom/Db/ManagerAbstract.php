@@ -176,8 +176,8 @@ abstract class ManagerAbstract
             /* @var $entity EntityAbstract */
             $entity = new $this->entity($this->columns());
 
-            if ($this->relationships)
-                $entity->setRelationships(new RelationshipManager($this->relationships, $entity, $this->factory));
+//            if ($this->relationships)
+//                $entity->setRelationships(new RelationshipManager($this->relationships, $entity, $this->factory));
 
             return $entity->data($data);
         }

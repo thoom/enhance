@@ -9,6 +9,12 @@
         "php":">=5.3.2",
         "doctrine/dbal":">=2.1, < 2.3"
     },
+    "suggest": {
+        "silex/silex":"1.*"
+    },
+    "require-dev": {
+        "silex/silex":"1.*"
+    },
     "autoload":{
         "psr-0":{
             "Thoom":"lib/"
