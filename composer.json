@@ -3,7 +3,7 @@
     "description":"PHP 5.3 classes used to enhance a Silex-based website",
     "type":"library",
     "keywords":["doctrine2", "silex"],
-    "homepage":"http://thoomtech.com",
+    "homepage":"https://github.com/thoom/enhance",
     "license":"MIT",
     "require":{
         "php":">=5.3.2",
