@@ -263,7 +263,7 @@ to a collections url.
 
 To create a Uuid:
 
-    $uuid = Thoom\Generator\Uuid::create();
+    $uuid = Thoom\Generator\Uuid::v4();
     //outputs something like: ef8dbbaf-681a-4329-b58c-262a6c2c1fb4
 
 

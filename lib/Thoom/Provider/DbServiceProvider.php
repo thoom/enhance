@@ -7,7 +7,7 @@
  *
  * @since 4/4/12 5:39 PM
  */
-namespace Thoom\Silex;
+namespace Thoom\Provider;
 
 use Silex\Application;
 use Silex\Provider\DoctrineServiceProvider;
@@ -24,11 +24,12 @@ class DbServiceProvider implements ServiceProviderInterface
      */
     function register(Application $app)
     {
-        //Register the DoctrineServiceProvider
-        $app->register(new DoctrineServiceProvider(), isset($app['db.options']) ? $app['db.options'] : array());
+        //Register the DoctrineServiceProvider if it's not there
+        if (!isset($app['db']) || !$app['db'] instanceof \Doctrine\DBAL\Connection) {
+            $app->register(new DoctrineServiceProvider(), isset($app['db.options']) ? $app['db.options'] : array());
+        }
 
-        $app['dbm'] = $app->share(function() use ($app)
-        {
+        $app['dbm'] = $app->share(function () use ($app) {
             $callback = isset($app['dbm.options']['callback']) ? $app['dbm.options']['callback'] : null;
             return new ManagerFactory($app['db'], $app['dbm.options']['format'], $callback);
         });
@@ -43,6 +44,6 @@ class DbServiceProvider implements ServiceProviderInterface
      */
     function boot(Application $app)
     {
-        // TODO: Implement boot() method.
+        //Nothing to do for now
     }
 }

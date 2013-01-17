@@ -53,8 +53,9 @@ class ManagerFactory
     {
         self::$db = $db;
 
-        if ($managerFormat)
+        if ($managerFormat) {
             static::$managerFormat = $managerFormat;
+        }
     }
 
     /**

@@ -47,8 +47,9 @@ class QueryBuilder
         $query = $this->db->createQueryBuilder()->select('t.*')->from($this->tablename, 't');
 
         foreach ($this->conditions as $key => $condition) {
-            if ($key == 'where')
+            if ($key == 'where') {
                 $this->where($condition, $query);
+            }
         }
 
         $this->query = $query;
