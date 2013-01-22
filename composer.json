@@ -1,24 +1,13 @@
 {
     "name":"thoom/enhance",
-    "description":"PHP 5.3 classes used to enhance a Silex-based website",
+    "description":"PHP 5.3 classes used to enhance a Silex-based website. Loads several thoom/* libraries",
     "type":"library",
     "keywords":["doctrine2", "silex"],
     "homepage":"https://github.com/thoom/enhance",
     "license":"MIT",
     "require":{
-        "php":">=5.3.2",
-        "doctrine/dbal":"2.2.*"
-    },
-    "suggest": {
-        "silex/silex":"dev-master"
-    },
-    "require-dev": {
-        "silex/silex":"dev-master"
-    },
-    "autoload":{
-        "psr-0":{
-            "Thoom":"lib/"
-        }
+        "thoom/dbm":"dev-master",
+        "thoom/generator":"dev-master"
     },
     "authors":[
         {
